@@ -1,5 +1,6 @@
 package com.otache.AssistMe.Repositories.impl;
 
+import com.otache.AssistMe.Models.Role.Role;
 import com.otache.AssistMe.Models.User.RegularUser;
 import com.otache.AssistMe.Models.User.User;
 import com.otache.AssistMe.Repositories.UserRepository;
@@ -85,14 +86,24 @@ public class PostgresUserRepository implements UserRepository {
     }
 
     @Override
-    public boolean save(User entity) throws SQLException {
-        String sql = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
+    public int save(User user) throws SQLException {
+        String sql = """
+                    INSERT INTO users (username, password, email)
+                    VALUES (?, ?, ?)
+                    RETURNING id
+                """;
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, entity.getName());
-            ps.setString(2, entity.getPassword());
-            ps.setString(3, entity.getEmail());
-            return ps.executeUpdate() > 0;
+
+            ps.setString(1, user.getName());
+            ps.setString(2, user.getPassword());
+            ps.setString(3, user.getEmail());
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("id");
+            }
+            throw new SQLException("Failed to insert user");
         }
     }
 
@@ -139,5 +150,21 @@ public class PostgresUserRepository implements UserRepository {
             }
         }
         throw new SQLException("Cannot retrieve last inserted ID");
+    }
+
+    public List<Role> getUserRoles(int userId) throws SQLException {
+        String sql = "SELECT r.* FROM roles r " +
+                "JOIN user_roles ur ON r.id = ur.role_id " +
+                "WHERE ur.user_id = ?";
+        List<Role> roles = new ArrayList<>();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                roles.add(new Role(rs.getInt("id"), rs.getString("name")));
+            }
+        }
+        return roles;
     }
 }

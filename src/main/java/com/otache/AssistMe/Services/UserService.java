@@ -1,7 +1,7 @@
 package com.otache.AssistMe.Services;
 
 import com.otache.AssistMe.Models.Role.Role;
-import com.otache.AssistMe.Models.User.Admin;
+import com.otache.AssistMe.Models.Role.RoleType;
 import com.otache.AssistMe.Models.User.User;
 import com.otache.AssistMe.Repositories.RoleRepository;
 import com.otache.AssistMe.Repositories.UserRepository;
@@ -37,74 +37,30 @@ public class UserService {
         }
     }
 
-    public boolean registerUser(User user) {
+    public void registerUser(User user, RoleType role) {
         try {
             if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-                return false;
-            } else {
-                userRepository.save(user);
-                return true;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error registering user", e);
-        }
-    }
-
-    public boolean assignRole(int userId, String roleName) {
-        try {
-            Optional<Role> roleOpt = roleRepository.findByName(roleName);
-            if (roleOpt.isEmpty()) {
-                return false;
-            }
-            int roleId = roleOpt.get().getId();
-            return userRepository.addUserRole(userId, roleId);
-        } catch (SQLException e) {
-            throw new RuntimeException("Error assigning role", e);
-        }
-    }
-
-    public void registerRegularUser(User user) {
-        try {
-            boolean success = userRepository.save(user);
-            if (!success) {
                 throw new RuntimeException("User already exists");
             }
 
-            int userId = userRepository.getLastInsertId();
+            int userId = userRepository.save(user);
+            assignRole(userId, role);
 
-            assignRole(userId, "USER");
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Registration failed", e);
         }
     }
 
-    public void registerAdmin(Admin admin) {
-        try {
-            boolean success = userRepository.save(admin);
-            if (!success) {
-                throw new RuntimeException("User already exists");
-            }
 
-            int userId = userRepository.getLastInsertId();
+    private void assignRole(int userId, RoleType role) throws SQLException {
+        Role dbRole = roleRepository.findByName(role.name())
+                .orElseThrow(() -> new RuntimeException("Role not found"));
 
-            assignRole(userId, "ADMIN");
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        userRepository.addUserRole(userId, dbRole.getId());
     }
 
-    public void registerAssistant(User assistant) {
-        try {
-            boolean success = userRepository.save(assistant);
-            if (!success) {
-                throw new RuntimeException("User already exists");
-            }
-
-            int userId = userRepository.getLastInsertId();
-
-            assignRole(userId, "ASSISTANT");
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+    public List<String> getRolesForUser(int userId) throws SQLException {
+        List<Role> roles = userRepository.getUserRoles(userId);
+        return roles.stream().map(Role::getName).toList();
     }
 }

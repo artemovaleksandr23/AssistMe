@@ -61,21 +61,8 @@ public class PostgresRoleRepository implements RoleRepository {
     }
 
     @Override
-    public boolean save(Role entity) throws SQLException {
-        String sql = "INSERT INTO roles (name) VALUES (?)";
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, entity.getName());
-            int affected = ps.executeUpdate();
-            if (affected > 0) {
-                ResultSet rs = ps.getGeneratedKeys();
-                if (rs.next()) {
-                    entity.setId(rs.getInt(1));
-                }
-                return true;
-            }
-        }
-        return false;
+    public int save(Role entity) throws SQLException {
+        return 0; // Roles are predefined; no need to implement save.
     }
 
     @Override

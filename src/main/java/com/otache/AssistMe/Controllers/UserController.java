@@ -3,6 +3,8 @@ package com.otache.AssistMe.Controllers;
 import com.otache.AssistMe.DTO.AdminDTO;
 import com.otache.AssistMe.DTO.AssistantDTO;
 import com.otache.AssistMe.DTO.RegularUserDTO;
+import com.otache.AssistMe.DTO.UserResponseDTO;
+import com.otache.AssistMe.Models.Role.RoleType;
 import com.otache.AssistMe.Models.User.Admin;
 import com.otache.AssistMe.Models.User.Assistant;
 import com.otache.AssistMe.Models.User.RegularUser;
@@ -12,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,9 +30,16 @@ public class UserController {
     }
 
     @GetMapping
-    public List<User> getAllUsers() {
-        return userService.getAllUsers();
+    public List<UserResponseDTO> getAllUsers() throws SQLException {
+        List<User> users = userService.getAllUsers();
+        List<UserResponseDTO> response = new ArrayList<>();
+        for (User user : users) {
+            List<String> roles = userService.getRolesForUser(user.getId()); // новый метод
+            response.add(new UserResponseDTO(user.getId(), user.getName(), user.getEmail(), roles));
+        }
+        return response;
     }
+
 
     @GetMapping("/{id}")
     public Optional<User> getUserById(@PathVariable int id) {
@@ -36,36 +47,41 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody RegularUserDTO dto) {
-        RegularUser user = new RegularUser(0, dto.getUsername(), dto.getPassword(), dto.getEmail());
+    public ResponseEntity<Void> registerUser(@RequestBody RegularUserDTO dto) {
         try {
-            userService.registerUser(user);
-            return ResponseEntity.ok("User registered");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            userService.registerUser(
+                    new RegularUser(0, dto.getUsername(), dto.getPassword(), dto.getEmail()),
+                    RoleType.USER
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).build(); // пустой успешный ответ
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build(); // пустой ответ при ошибке
         }
     }
 
     @PostMapping("/register-admin")
-    public ResponseEntity<String> registerAdmin(@RequestBody AdminDTO dto) {
-        Admin admin = new Admin(0, dto.getUsername(), dto.getPassword(), dto.getEmail());
+    public ResponseEntity<Void> registerAdmin(@RequestBody AdminDTO dto) {
         try {
-            userService.registerAdmin(admin);
-            return ResponseEntity.ok("Admin registered");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            userService.registerUser(
+                    new Admin(0, dto.getUsername(), dto.getPassword(), dto.getEmail()),
+                    RoleType.ADMIN
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
 
-
     @PostMapping("/register-assistant")
-    public ResponseEntity<String> registerAssistant(@RequestBody AssistantDTO dto) {
-        Assistant assistant = new Assistant(0, dto.getUsername(), dto.getPassword(), dto.getEmail());
+    public ResponseEntity<Void> registerAssistant(@RequestBody AssistantDTO dto) {
         try {
-            userService.registerAssistant(assistant);
-            return ResponseEntity.ok("Assistant registered");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            userService.registerUser(
+                    new Assistant(0, dto.getUsername(), dto.getPassword(), dto.getEmail()),
+                    RoleType.ASSISTANT
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
 }

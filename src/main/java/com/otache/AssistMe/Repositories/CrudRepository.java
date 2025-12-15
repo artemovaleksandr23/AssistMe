@@ -9,7 +9,7 @@ public interface CrudRepository<T> {
 
     List<T> findAll() throws SQLException;
 
-    boolean save(T entity) throws SQLException;
+    int save(T entity) throws SQLException;
 
     boolean delete(int id) throws SQLException;
 
