@@ -1,4 +1,6 @@
-import com.otache.AssistMe.Models.*;
+import com.otache.AssistMe.Models.User.Admin;
+import com.otache.AssistMe.Models.User.Assistant;
+import com.otache.AssistMe.Models.User.User;
 import com.otache.AssistMe.Services.AdminActions;
 import com.otache.AssistMe.Services.AssistantActions;
 import com.otache.AssistMe.Services.RegularUserActions;

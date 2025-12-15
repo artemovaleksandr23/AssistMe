@@ -1,4 +1,4 @@
-package com.otache.AssistMe.Models;
+package com.otache.AssistMe.Models.User;
 
 import com.otache.AssistMe.Services.RegularUserActions;
 
